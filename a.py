@@ -1,94 +1,36 @@
 import serial
-import time
 
-# ---------------- CONFIG ----------------
-PORT = "COM9"        # change as needed
-BAUD = 4800
-USE_7E1 = False       # set True if your scale needs 7E1 mode
-
-# ----------------------------------------
-if USE_7E1:
-    BYTESIZE = serial.SEVENBITS
-    PARITY   = serial.PARITY_EVEN
-    STOPBITS = serial.STOPBITS_ONE
-else:
-    BYTESIZE = serial.EIGHTBITS
-    PARITY   = serial.PARITY_NONE
-    STOPBITS = serial.STOPBITS_ONE
-
-
-def extract_number(line: str):
-    """
-    Extract a floating-point number from a line.
-    Adjust this if your scale sends reversed digits.
-    """
-    line = line.strip()
-
-    # Remove leading '=' or other characters
-    if '=' in line:
-        line = line.replace('=', '').strip()
-
-    # If your device sends numbers reversed, flip them:
-    #   e.g. "00045.6" → "6.54000"
-    # Uncomment this ONLY if needed:
-    # line = line[::-1]
-
-    try:
-        return float(line)
-    except ValueError:
-        return None
-
+COM_PORT = "COM9"       # change if needed
+BAUD     = 4800         # as per your requirement
 
 def main():
-    print(f"Opening {PORT} @ {BAUD} baud...")
-    ser = serial.Serial(
-        port=PORT,
-        baudrate=BAUD,
-        bytesize=BYTESIZE,
-        parity=PARITY,
-        stopbits=STOPBITS,
-        timeout=0.2
-    )
+    try:
+        ser = serial.Serial(
+            port=COM_PORT,
+            baudrate=BAUD,
+            bytesize=serial.EIGHTBITS,   # or SEVENBITS depending on device
+            parity=serial.PARITY_NONE,   # or PARITY_EVEN (7E1)
+            stopbits=serial.STOPBITS_ONE,
+            timeout=1.0
+        )
+    except Exception as e:
+        print("Error opening serial port:", e)
+        return
 
-    buffer = ""
+    print(f"Connected to {COM_PORT} @ {BAUD} baud")
+    print("Printing raw incoming data... (Ctrl+C to stop)\n")
 
-    print("Reading... (Ctrl+C to stop)\n")
+    try:
+        while True:
+            data = ser.read(64)  # read up to 64 bytes at a time
+            if data:
+                text = data.decode("ascii", errors="replace")
+                print(text, end="", flush=True)
 
-    while True:
-        try:
-            chunk = ser.read(32)   # blocking read
-            if not chunk:
-                continue
-
-            # Convert to ASCII text
-            text = chunk.decode("ascii", errors="ignore")
-            buffer += text
-
-            # If no newline yet, keep building buffer
-            if "\n" not in buffer and "\r" not in buffer:
-                continue
-
-            # Split into full lines
-            lines = buffer.splitlines(keepends=False)
-            buffer = ""  # reset; the last partial line will be empty or handled
-
-            for line in lines:
-                if not line.strip():
-                    continue
-
-                value = extract_number(line)
-                if value is not None:
-                    print(f"Weight: {value:.3f} kg   (raw line: '{line}')")
-
-        except KeyboardInterrupt:
-            print("\nStopping...")
-            break
-
-        except Exception as e:
-            print(f"Error: {e}")
-            time.sleep(0.5)
-
+    except KeyboardInterrupt:
+        print("\nStopping.")
+    finally:
+        ser.close()
 
 if __name__ == "__main__":
     main()
-
