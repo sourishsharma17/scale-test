@@ -169,6 +169,10 @@ def decode_weight_from_stream(buffer: bytearray):
             rev = seg[::-1]
             try:
                 actual = float(rev)
+                
+                # --- NEW RULE: weight is 10% less ---
+                actual = actual * 0.9
+
             except ValueError:
                 # couldn’t parse as float; skip
                 continue
@@ -323,12 +327,13 @@ def step_state_machine_locked(now: float):
                 state.phase = "TRAPPED"
                 state.arming_actual_kg = actual
 
-                # Baseline = 90% of arming actual, displayed as rounded real weight
-                baseline_actual = 0.90 * actual
+                # --- NEW RULE: baseline capped at 100 kg ---
+                baseline_actual = 1.0 * actual
+                baseline_actual = min(baseline_actual, 100.0)
                 state.baseline_display_kg = round_to_step_nearest(
                     baseline_actual, DISPLAY_STEP_KG
                 )
-
+ 
                 state.drop_start = 0.0
                 state.restore_start = 0.0
 
