@@ -10,6 +10,7 @@
 #   else -> round_nearest(arming_actual * 0.90, 0.5 kg)
 # No “rapid fall” logic; just the hold-downs. Transparent overlay.
 
+import logging
 import math
 import re
 import statistics
@@ -22,6 +23,10 @@ from typing import List, Optional
 import requests
 import serial
 from flask import Flask, jsonify, render_template_string
+
+# Suppress Flask logging
+log = logging.getLogger("werkzeug")
+log.setLevel(logging.ERROR)
 
 # ===================== HARD-CODED CONFIG =====================
 COM_PORT = r"COM9"  # your USB adapter port (e.g. "COM9" or "/dev/ttyUSB0")
@@ -494,7 +499,16 @@ def dev_disarm():
 def main():
     t = threading.Thread(target=reader_loop, daemon=True)
     t.start()
-    app.run(host=LISTEN_HOST, port=LISTEN_PORT, debug=False, threaded=True)
+    import os
+
+    os.environ["WERKZEUG_RUN_MAIN"] = "true"
+    app.run(
+        host=LISTEN_HOST,
+        port=LISTEN_PORT,
+        debug=False,
+        threaded=True,
+        use_reloader=False,
+    )
 
 
 if __name__ == "__main__":
