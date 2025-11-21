@@ -16,15 +16,9 @@ print(f"Opened {PORT} at {BAUD} baud. Printing raw data... (Ctrl+C to stop)")
 
 try:
     while True:
-        # Read up to one "line" – many indicators end frames with \r or \n
-        data = ser.readline()
-
-        if not data:
-            continue
-
-        # Print *exactly* what came in
-        # repr() shows escape codes; .hex() shows bytes if you need it
-        print(f"RAW: {repr(data)}  HEX: {data.hex(' ')}")
+        data = ser.read(32)   # read up to 32 bytes
+        if data:
+            print(f"RAW: {repr(data)}  HEX: {data.hex(' ')}")
 
 except KeyboardInterrupt:
     pass
