@@ -1,30 +1,33 @@
 import serial
 
-COM_PORT = "COM9"   # change if needed
-BAUD     = 4800
+PORT = "COM9"      # <-- change to your port name
+BAUD = 4800
 
-def main():
-    ser = serial.Serial(
-        port=COM_PORT,
-        baudrate=BAUD,
-        bytesize=serial.EIGHTBITS,   # or SEVENBITS if your scale needs 7E1
-        parity=serial.PARITY_NONE,   # or PARITY_EVEN for 7E1
-        stopbits=serial.STOPBITS_ONE,
-        timeout=1.0,
-    )
+ser = serial.Serial(
+    port=PORT,
+    baudrate=BAUD,
+    bytesize=serial.EIGHTBITS,
+    parity=serial.PARITY_NONE,
+    stopbits=serial.STOPBITS_ONE,
+    timeout=1.0,          # 1 second read timeout
+)
 
-    print(f"Opened {COM_PORT} @ {BAUD} baud")
-    try:
-        while True:
-            chunk = ser.read(64)    # read up to 64 bytes (blocking until something arrives or timeout)
-            if chunk:
-                # raw bytes – exactly as received
-                print(repr(chunk))
-    except KeyboardInterrupt:
-        pass
-    finally:
-        ser.close()
-        print("\nSerial closed.")
+print(f"Opened {PORT} at {BAUD} baud. Printing raw data... (Ctrl+C to stop)")
 
-if __name__ == "__main__":
-    main()
+try:
+    while True:
+        # Read up to one "line" – many indicators end frames with \r or \n
+        data = ser.readline()
+
+        if not data:
+            continue
+
+        # Print *exactly* what came in
+        # repr() shows escape codes; .hex() shows bytes if you need it
+        print(f"RAW: {repr(data)}  HEX: {data.hex(' ')}")
+
+except KeyboardInterrupt:
+    pass
+finally:
+    ser.close()
+    print("\nPort closed.")
