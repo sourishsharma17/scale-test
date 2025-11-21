@@ -1,36 +1,30 @@
 import serial
 
-COM_PORT = "COM9"       # change if needed
-BAUD     = 4800         # as per your requirement
+COM_PORT = "COM9"   # change if needed
+BAUD     = 4800
 
 def main():
-    try:
-        ser = serial.Serial(
-            port=COM_PORT,
-            baudrate=BAUD,
-            bytesize=serial.EIGHTBITS,   # or SEVENBITS depending on device
-            parity=serial.PARITY_NONE,   # or PARITY_EVEN (7E1)
-            stopbits=serial.STOPBITS_ONE,
-            timeout=1.0
-        )
-    except Exception as e:
-        print("Error opening serial port:", e)
-        return
+    ser = serial.Serial(
+        port=COM_PORT,
+        baudrate=BAUD,
+        bytesize=serial.EIGHTBITS,   # or SEVENBITS if your scale needs 7E1
+        parity=serial.PARITY_NONE,   # or PARITY_EVEN for 7E1
+        stopbits=serial.STOPBITS_ONE,
+        timeout=1.0,
+    )
 
-    print(f"Connected to {COM_PORT} @ {BAUD} baud")
-    print("Printing raw incoming data... (Ctrl+C to stop)\n")
-
+    print(f"Opened {COM_PORT} @ {BAUD} baud")
     try:
         while True:
-            data = ser.read(64)  # read up to 64 bytes at a time
-            if data:
-                text = data.decode("ascii", errors="replace")
-                print(text, end="", flush=True)
-
+            chunk = ser.read(64)    # read up to 64 bytes (blocking until something arrives or timeout)
+            if chunk:
+                # raw bytes – exactly as received
+                print(repr(chunk))
     except KeyboardInterrupt:
-        print("\nStopping.")
+        pass
     finally:
         ser.close()
+        print("\nSerial closed.")
 
 if __name__ == "__main__":
     main()
